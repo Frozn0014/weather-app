@@ -21,6 +21,7 @@
               v-model="search"
               @keypress="
                 (event) => {
+                  error = false;
                   if (event.key == 'Enter') getCurrentWeatherInfo();
                 }
               "
@@ -32,16 +33,27 @@
               >Go</a
             >
           </div>
-          <h2 class="mt-8 text-center text-2xl font-semibold text-slate-800">
-            {{ weatherData.location.region }}
-          </h2>
-          <h3 class="text-md text-center text-slate-600">{{ weatherData.location.country }}</h3>
-          <h2 class="mt-8 text-3xl text-slate-700">{{ weatherData.condition }}</h2>
-          <img
-            :src="weatherData.icon"
-            :class="{ hidden: !weatherData.available }"
-            class="mt-4 w-1/3"
-          />
+          <div
+            class="mt-8 flex w-2/3 flex-col items-center break-all rounded border-2 border-red-600/60 bg-red-500/40 p-2 text-center"
+            :class="{ hidden: !error }"
+          >
+            <h4 class="text-xl font-medium">Error</h4>
+            <h5>
+              Could not find location <strong>{{ errorSearch }}</strong>
+            </h5>
+          </div>
+          <div :class="{ hidden: !weatherData.available }">
+            <h2 class="mt-8 text-center text-2xl font-semibold text-slate-800">
+              {{ weatherData.location.region }}
+            </h2>
+            <h3 class="text-md text-center text-slate-600">{{ weatherData.location.country }}</h3>
+            <h2 class="mt-8 text-center text-3xl text-slate-700">{{ weatherData.condition }}</h2>
+            <img
+              :src="weatherData.icon"
+              :class="{ hidden: !weatherData.available }"
+              class="mt-4 w-1/3"
+            />
+          </div>
           <div
             id="data"
             class="mt-2 flex w-11/12 flex-col items-center gap-8"
@@ -191,6 +203,9 @@ export default {
       theme: 'light',
       api: `https://api.weatherapi.com/v1/current.json?key=a24feac5eafe4a288f8160227231805`,
       search: '',
+      loading: false,
+      error: false,
+      errorSearch: '',
       weatherData: {
         available: false,
         location: {
@@ -255,6 +270,11 @@ export default {
           this.weatherData.last_updated = data.current.last_updated;
 
           this.weatherData.available = true;
+        })
+        .catch(() => {
+          this.weatherData.available = false;
+          this.errorSearch = this.search;
+          this.error = true;
         });
     },
     tempTextColor(temp: number, unit: 'F' | 'C') {
