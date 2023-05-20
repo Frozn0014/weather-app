@@ -1,3 +1,7 @@
+<script setup lang="ts">
+import Spinner from './components/Spinner.vue';
+</script>
+
 <template>
   <div id="theme" :class="{ dark: theme === 'dark' }">
     <div
@@ -22,17 +26,24 @@
               @keypress="
                 (event) => {
                   error = false;
-                  if (event.key == 'Enter') getCurrentWeatherInfo();
+                  if (event.key == 'Enter') getCurrentWeatherInfo(search);
                 }
               "
               class="w-full border-2 border-x-0 border-slate-200 px-2 focus:outline-none"
             />
             <a
-              class="flex w-24 items-center justify-center rounded rounded-s-none border-2 border-s-0 border-slate-200 bg-emerald-400/75 font-bold text-slate-800"
-              @click="getCurrentWeatherInfo()"
+              class="flex w-24 cursor-pointer items-center justify-center rounded rounded-s-none border-2 border-s-0 border-slate-200 bg-emerald-400/75 font-bold text-slate-800"
+              @click="getCurrentWeatherInfo(search)"
               >Go</a
             >
           </div>
+          <a
+            class="my-8 cursor-pointer rounded-lg bg-sky-600/30 p-2 font-medium elevation-4"
+            :class="{ hidden: weatherData.available }"
+            @click="getLocation()"
+            >Use my current location</a
+          >
+          <Spinner size="md" :class="{ hidden: !loading }" />
           <div
             class="mt-8 flex w-2/3 flex-col items-center break-all rounded border-2 border-red-600/60 bg-red-500/40 p-2 text-center"
             :class="{ hidden: !error }"
@@ -42,8 +53,15 @@
               Could not find location <strong>{{ errorSearch }}</strong>
             </h5>
           </div>
-          <div :class="{ hidden: !weatherData.available }">
+          <div class="flex flex-col items-center" :class="{ hidden: !weatherData.available }">
             <h2 class="mt-8 text-center text-2xl font-semibold text-slate-800">
+              <vue-custom-tooltip label="Not your location?">
+                <i
+                  class="fa-solid fa-location-dot cursor-pointer"
+                  :class="{ hidden: !isCurrentLocation }"
+                  @click="resetLocation()"
+                ></i>
+              </vue-custom-tooltip>
               {{ weatherData.location.region }}
             </h2>
             <h3 class="text-md text-center text-slate-600">{{ weatherData.location.country }}</h3>
@@ -202,6 +220,7 @@ export default {
     return {
       theme: 'light',
       api: `https://api.weatherapi.com/v1/current.json?key=a24feac5eafe4a288f8160227231805`,
+      isCurrentLocation: false,
       search: '',
       loading: false,
       error: false,
@@ -233,10 +252,15 @@ export default {
       }
     };
   },
-  mounted() {},
+  mounted() {
+    if (localStorage.location) {
+      this.isCurrentLocation = true;
+      this.getCurrentWeatherInfo(localStorage.location);
+    }
+  },
   methods: {
-    async getCurrentWeatherInfo() {
-      await fetch(this.api + `&q=${this.search}`)
+    async getCurrentWeatherInfo(search: string) {
+      await fetch(this.api + `&q=${search}`)
         .then((res) => res.json())
         .then((data) => {
           this.weatherData.location.region = data.location.region
@@ -269,6 +293,7 @@ export default {
 
           this.weatherData.last_updated = data.current.last_updated;
 
+          this.loading = false;
           this.weatherData.available = true;
         })
         .catch(() => {
@@ -331,6 +356,23 @@ export default {
     },
     cToF(c: number) {
       return c * (9 / 5) + 32;
+    },
+    getLocation() {
+      if (navigator.geolocation) {
+        this.loading = true;
+        navigator.geolocation.getCurrentPosition((pos) => {
+          localStorage.location = [
+            pos.coords.latitude.toFixed(3),
+            pos.coords.longitude.toFixed(3)
+          ].join();
+          this.isCurrentLocation = true;
+          this.getCurrentWeatherInfo(localStorage.location);
+        });
+      }
+    },
+    resetLocation() {
+      localStorage.removeItem('location');
+      window.location.reload();
     }
   }
 };
