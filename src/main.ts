@@ -3,13 +3,14 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Tooltip from '@adamdehaven/vue-custom-tooltip';
 import './index.css';
 import App from './App.vue';
-import RealtimeVue from './Realtime.vue';
-import ForecastVue from './Forecast.vue'
+import NotFound from './404.vue'
+import Weather from './Weather.vue';
 
 const routes = [
-  { path: '/', redirect: '/realtime'},
-  { path: '/realtime', component: RealtimeVue },
-  { path: '/forecast', component: ForecastVue}
+  { path: '/', redirect: '/weather/realtime' },
+  { path: '/weather', redirect: '/weather/realtime' },
+  { path: '/weather/:mode', component: Weather },
+  { path: '/:pathMatch(.*)*', component: NotFound}
 ];
 
 const router = createRouter({
