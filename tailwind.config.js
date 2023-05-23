@@ -9,6 +9,9 @@ export default {
       colors: {
         light: '#bae6fd',
         dark: '#2b2b2b'
+      },
+      backgroundImage: {
+        'gradient-dark': "#000"
       }
     },
   },

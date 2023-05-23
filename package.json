@@ -9,7 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.2.47"
+    "vue": "^3.2.47",
+    "vue-router": "^4.2.1"
   },
   "devDependencies": {
     "@adamdehaven/vue-custom-tooltip": "^2.6.0",
