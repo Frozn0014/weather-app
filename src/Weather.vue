@@ -5,8 +5,8 @@ import Spinner from './components/Spinner.vue';
 
 <template>
   <div id="theme" :class="{ dark: theme === 'dark' }">
-    <div id="background" class="min-h-screen bg-light pb-16 dark:bg-zinc-800">
-      <Navbar :cf="mode === 'forecast'" />
+    <div id="background" class="min-h-screen bg-light pb-16 dark:bg-dark">
+      <Navbar />
       <div class="container mx-auto px-4 font-sans">
         <!-- REALTIME START -->
         <div
@@ -21,7 +21,6 @@ import Spinner from './components/Spinner.vue';
             ></a>
             <input
               type="text"
-              name="search"
               placeholder="City / State / ZIP"
               v-model="search"
               class="w-full border-2 border-x-0 border-slate-200 bg-slate-50 px-2 focus:outline-none dark:border-slate-600 dark:bg-slate-200"
@@ -131,8 +130,7 @@ import Spinner from './components/Spinner.vue';
               </div>
             </div>
             <h3 class="text-3xl font-light xl:text-2xl">
-              <i class="fa-solid fa-smog text-stone-500/75 dark:text-stone-400/75"></i
-              >&nbsp;&nbsp;Humidity
+              <i class="fa-solid fa-smog text-stone-500/75"></i>&nbsp;&nbsp;Humidity
             </h3>
             <div class="grid w-2/3 grid-cols-1 md:w-1/2 lg:w-1/3 xl:w-full">
               <div
@@ -243,7 +241,6 @@ import Spinner from './components/Spinner.vue';
             ></a>
             <input
               type="text"
-              name="search"
               placeholder="City / State / ZIP"
               v-model="search"
               class="w-full border-2 border-x-0 border-slate-200 bg-slate-50 px-2 focus:outline-none dark:border-slate-600 dark:bg-slate-200"
@@ -252,7 +249,7 @@ import Spinner from './components/Spinner.vue';
                   error = false;
                   if (event.key == 'Enter') {
                     if (!search) return;
-                    getForecast(search);
+                    getCurrentWeatherInfo(search);
                   }
                 }
               "
@@ -262,7 +259,7 @@ import Spinner from './components/Spinner.vue';
               @click="
                 () => {
                   if (!search) return;
-                  getForecast(search);
+                  getCurrentWeatherInfo(search);
                 }
               "
               >Go</a
@@ -299,108 +296,56 @@ import Spinner from './components/Spinner.vue';
               {{ weatherData.location.country }}
             </h3>
           </div>
-          <div
-            id="data"
-            class="mt-12 flex w-2/3 flex-col items-center justify-center gap-x-8 gap-y-8 p-4 md:w-11/12 md:flex-row md:gap-y-4"
-            :class="{ hidden: !weatherData.available }"
-          >
-            <div
-              v-for="day in weatherData.forecast"
-              class="grid w-full flex-shrink-0 flex-grow-0 grid-cols-4 place-items-center content-start items-center gap-y-2 rounded-xl border-2 border-zinc-700 bg-white/20 pb-2 pr-2 text-slate-600 dark:text-slate-200 md:w-48 md:rounded-md"
-            >
-              <h1 class="col-span-3 flex-[50%] text-xl font-medium">
-                {{ `${day.date?.slice(5).replace('-', '/')}/${day.date?.slice(0, 4)}` }}
-              </h1>
-              <img :src="day.icon" class="mr-1 h-10 w-10 justify-self-end" />
-              <i
-                class="fa-solid fa-xl fa-temperature-three-quarters flex items-center text-sky-400"
-              ></i>
-              <h2
-                class="text-md col-span-3 place-self-start font-semibold"
-                :class="tempTextColor(unit === 'F' ? day.avgtemp_f : day.avgtemp_c, unit as 'C' | 'F')"
-              >
-                {{ unit === 'F' ? day.avgtemp_f : day.avgtemp_c }} &deg;<span id="unit">{{
-                  unit
-                }}</span>
-              </h2>
-              <i class="fa-solid fa-xl fa-temperature-arrow-up flex items-center text-sky-400"></i>
-              <h2
-                class="text-md col-span-3 place-self-start font-semibold"
-                :class="tempTextColor(unit === 'F' ? day.maxtemp_f : day.maxtemp_c, unit as 'C' | 'F')"
-              >
-                {{ unit === 'F' ? day.maxtemp_f : day.maxtemp_c }} &deg;<span id="unit">{{
-                  unit
-                }}</span>
-              </h2>
-              <i class="fa-solid fa-smog text-stone-500/75 dark:text-stone-400/75"></i>
-              <h2 class="text-md place-self-start font-semibold">{{ day.humidity }}%</h2>
-              <div class="col-span-2 h-1 w-full rounded-full bg-slate-500/50">
-                <div
-                  class="h-1 rounded-full bg-slate-600 dark:bg-slate-300"
-                  :style="{ width: `${day.humidity}%` }"
-                ></div>
-              </div>
-              <i class="fa-solid fa-cloud-showers-heavy text-sky-400"></i>
-              <h2 class="text-md col-span-3 place-self-start font-semibold">
-                {{ day.precip }} inches
-              </h2>
-              <i class="fa-regular fa-snowflake text-gray-100"></i>
-              <h2 class="text-md col-span-3 place-self-start font-semibold">
-                {{ day.snow }} inches
-              </h2>
-              <i class="fa-solid fa-wind text-sky-100"></i>
-              <h2 class="text-md col-span-3 place-self-start font-semibold">
-                {{ unit === 'F' ? day.maxwind_mph : day.maxwind_kph }}
-                {{ unit === 'F' ? 'mph' : 'kph' }}
-              </h2>
-            </div>
-          </div>
         </div>
-        <!-- FORECAST END -->
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { themeStore, unitStore } from './store';
-import { LocationData, RealtimeData, ForecastData } from './types';
 export default {
   data() {
     return {
       mode: window.location.pathname.split('/')[2],
+      theme: localStorage.theme || 'light',
+      api: `https://api.weatherapi.com/v1/current.json?key=a24feac5eafe4a288f8160227231805`,
       isCurrentLocation: false,
       search: '',
       loading: false,
       error: false,
       errorSearch: '',
-      forecastDays: 3,
       weatherData: {
-        realtime: {} as RealtimeData,
-        forecast: [{} as ForecastData],
+        realtime: {
+          condition: '',
+          icon: '',
+          temp_c: 0,
+          temp_f: 0,
+          feelslike_c: 0,
+          feelslike_f: 0,
+          humidity: 0,
+          cloudCover: 0,
+          precip: 0,
+          wind_mph: 0,
+          wind_kph: 0,
+          wind_dir: '',
+          vis_m: 0,
+          vis_km: 0,
+          uv: 0,
+          last_updated: ''
+        },
         available: false,
-        location: {} as LocationData
+        location: {
+          region: '',
+          country: ''
+        }
       }
     };
   },
-  computed: {
-    theme() {
-      return themeStore().theme;
-    },
-    unit() {
-      return unitStore().unit;
-    }
-  },
   mounted() {
+    if (!['light', 'dark'].includes(localStorage.theme)) localStorage.theme = this.theme = 'light';
+
     if (localStorage.location) {
-      switch (this.mode) {
-        case 'realtime':
-          this.getCurrentWeatherInfo(localStorage.location, true);
-          return;
-        case 'forecast':
-          this.getForecast(localStorage.location, true);
-          return;
-      }
+      this.getCurrentWeatherInfo(localStorage.location, true);
     }
   },
   beforeCreate() {
@@ -410,7 +355,7 @@ export default {
   },
   methods: {
     async getCurrentWeatherInfo(search: string, current: boolean = false) {
-      this.query('current', search)
+      await fetch(this.api + `&q=${search}`)
         .then((res) => res.json())
         .then((data) => {
           this.weatherData.location.region = data.location.region
@@ -451,70 +396,6 @@ export default {
           this.errorSearch = this.search;
           this.error = true;
         });
-    },
-    async getForecast(search: string, current: boolean = false) {
-      await this.query('forecast', search, [{ key: 'days', value: this.forecastDays.toString() }])
-        .then((res) => res.json())
-        .then((d) => {
-          this.weatherData.location.region = d.location.region
-            ? [d.location.name, d.location.region].join(', ')
-            : d.location.name;
-          this.weatherData.location.country = d.location.country;
-
-          for (var i = 0; i < this.forecastDays; ++i) {
-            const day = {} as ForecastData;
-            const data = d.forecast.forecastday[i];
-
-            day.date = data.date;
-
-            day.condition = data.day.condition.text;
-            day.icon =
-              'https://' + (data.day.condition.icon as string).slice(2).replace('64x64', '128x128');
-
-            day.maxtemp_c = data.day.maxtemp_c;
-            day.maxtemp_f = data.day.maxtemp_f;
-            day.avgtemp_c = data.day.avgtemp_c;
-            day.avgtemp_f = data.day.avgtemp_f;
-
-            day.maxwind_kph = data.day.maxwind_kph;
-            day.maxwind_mph = data.day.maxwind_mph;
-
-            day.precip = data.day.totalprecip_in;
-            day.snow = data.day.totalsnow_cm;
-            day.humidity = data.day.avghumidity;
-
-            day.vis_km = data.day.avgvis_km;
-            day.vis_m = data.day.avgvis_miles;
-
-            day.rain_chance = data.day.daily_chance_of_rain;
-            day.snow_chance = data.day.daily_chance_of_snow;
-
-            day.uv = data.day.uv;
-
-            this.weatherData.forecast[i] = day;
-          }
-
-          this.error = false;
-          this.loading = false;
-          this.isCurrentLocation = current;
-
-          this.weatherData.available = true;
-        })
-        .catch((err) => {
-          console.error(err);
-          this.weatherData.available = false;
-          this.errorSearch = this.search;
-          this.error = true;
-        });
-    },
-    query(method: string, query: string, params?: { key: string; value: string }[]) {
-      var link = `https://api.weatherapi.com/v1/${method}.json?key=a24feac5eafe4a288f8160227231805&q=${query}`;
-
-      params?.forEach(({ key, value }) => {
-        link += `&${key}=${value}`;
-      });
-
-      return fetch(link);
     },
     tempTextColor(temp: number, unit: 'F' | 'C') {
       const temps = {

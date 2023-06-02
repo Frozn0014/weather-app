@@ -16,5 +16,5 @@ export default {
     },
   },
   darkMode: 'class',
-  plugins: [require('tailwindcss-elevation'), require('tailwind-border-gradients'), require('tailwindcss-gradient-text')]
+  plugins: [require('tailwindcss-elevation')]
 };
